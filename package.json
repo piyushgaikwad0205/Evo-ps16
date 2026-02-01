@@ -1,0 +1,11 @@
+{
+    "name": "campus-connect-cleanup",
+    "version": "1.0.0",
+    "description": "Production cleanup and optimization scripts",
+    "scripts": {
+        "clean": "node scripts/cleanup.js",
+        "build:prod": "cd client && npm run build && cd ../server && npm install --production",
+        "start:prod": "cd server && NODE_ENV=production npm start",
+        "test:all": "cd server && npm test && cd ../client && npm test"
+    }
+}

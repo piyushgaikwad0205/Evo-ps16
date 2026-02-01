@@ -1,0 +1,47 @@
+name: Keep Server Alive
+
+on:
+  schedule:
+    # Run every 8 minutes (GitHub Actions minimum is 5 minutes, but we use 8 for safety)
+    - cron: '*/8 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Ping Health Endpoint
+        run: |
+          echo "🏥 Pinging health endpoint to keep server alive..."
+          
+          # Using Campus Connect production URL on Render
+          SERVER_URL="${{ secrets.SERVER_URL || 'https://campus-connects-final-1.onrender.com' }}"
+          
+          # Make request to health endpoint
+          response=$(curl -s -o /dev/null -w "%{http_code}" -X GET \
+            -H "User-Agent: GitHub-Actions-KeepAlive/1.0" \
+            --max-time 30 \
+            "${SERVER_URL}/health")
+          
+          echo "Response code: $response"
+          
+          if [ "$response" -eq 200 ]; then
+            echo "✅ Server is healthy and awake!"
+          else
+            echo "⚠️  Server responded with status code: $response"
+          fi
+          
+      - name: Ping Server Status
+        run: |
+          echo "📡 Checking server status endpoint..."
+          
+          SERVER_URL="${{ secrets.SERVER_URL || 'https://campus-connects-final-1.onrender.com' }}"
+          
+          response=$(curl -s -X GET \
+            -H "User-Agent: GitHub-Actions-KeepAlive/1.0" \
+            --max-time 30 \
+            "${SERVER_URL}/server-status")
+          
+          echo "Server response: $response"
+          echo "✅ Keep-alive ping completed at $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
