@@ -99,23 +99,132 @@ If you get 404 errors on refresh, create `client/vercel.json`:
 
 ## Common Issues & Solutions
 
+### Issue: Vercel deployment fails during build
+**Symptoms:** Build fails with errors about missing dependencies or modules
+**Solution:** 
+```bash
+# Clean and rebuild locally first
+cd client
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+
+# If successful, commit and push
+git add .
+git commit -m "Fix dependencies for Vercel"
+git push origin dev
+```
+
+### Issue: Build succeeds but deployment still fails
+**Solution:** Check these in Vercel dashboard:
+- Root Directory is set to `client` (not the repo root)
+- Build Command: `npm run build`
+- Output Directory: `build`
+- Install Command: `npm install`
+- Node Version: 18.x or higher (set in Environment Variables: `NODE_VERSION=18`)
+
+### Issue: "Failed to compile" during Vercel build
+**Solution:** 
+1. Check for TypeScript errors (even if using JavaScript)
+2. Fix any ESLint errors that block build
+3. Ensure all imports are correct
+4. Add to `client/.env.production`:
+   ```
+   GENERATE_SOURCEMAP=false
+   CI=false
+   ```
+
 ### Issue: API calls failing
 **Solution:** Check CORS settings in backend. Ensure `CLIENT_URL` matches your Vercel domain.
 
 ### Issue: 404 on page refresh
-**Solution:** Add `vercel.json` with rewrites (see Step 5)
+**Solution:** The `vercel.json` file should handle this. If still happening:
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
 
 ### Issue: Environment variables not working
 **Solution:** 
 - Ensure `REACT_APP_API_URL` is set in Vercel dashboard
 - Redeploy after adding environment variables
 - Check browser console for API URL
+- Verify the variable name starts with `REACT_APP_`
 
-### Issue: Build fails
+### Issue: Build fails with "JavaScript heap out of memory"
+**Solution:** Add this to Vercel environment variables:
+```
+NODE_OPTIONS=--max_old_space_size=4096
+```
+
+### Issue: CSS/Tailwind not working in production
+**Warning:** You have a CSS nesting warning. To fix:
+1. Install postcss-nesting:
+   ```bash
+   cd client
+   npm install -D postcss-nesting
+   ```
+2. Update `postcss.config.js`:
+   ```javascript
+   module.exports = {
+     plugins: {
+       'postcss-nesting': {},
+       tailwindcss: {},
+       autoprefixer: {},
+     },
+   };
+   ```
+
+### Issue: Build succeeds locally but fails on Vercel
 **Solution:**
-- Check build logs in Vercel
-- Ensure all dependencies are in `package.json`
-- Try building locally: `npm run build`
+1. Check Node version mismatch - add to Vercel Environment Variables:
+   ```
+   NODE_VERSION=18
+   ```
+2. Clear Vercel build cache:
+   - Go to Project Settings → General
+   - Scroll down and click "Clear Build Cache"
+3. Check for case-sensitive imports (Linux is case-sensitive)
+
+## Troubleshooting: Deploy Using Vercel CLI
+
+If dashboard deployment keeps failing, try CLI:
+
+```bash
+# Install Vercel CLI globally
+npm install -g vercel
+
+# Login
+vercel login
+
+# Go to client folder
+cd client
+
+# Run deployment
+vercel
+
+# When prompted:
+# - Set up and deploy? Yes
+# - Which scope? Your account
+# - Link to existing project? No
+# - Project name: campus-connect-frontend
+# - Directory: ./ (current directory)
+# - Override settings? No
+
+# For production deployment
+vercel --prod
+```
+
+## Step 7: Manual Build Test Before Deploying
 
 ## Auto-Deploy on Git Push
 
