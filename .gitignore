@@ -21,6 +21,7 @@ client/.env.local
 firebase-service-account.json
 **/firebase-service-account*.json
 server/config/firebase-service-account.json
+server/config/*-firebase-adminsdk-*.json
 serviceAccountKey.json
 
 # ============================================
