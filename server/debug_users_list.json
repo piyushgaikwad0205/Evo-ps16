@@ -1,0 +1,68 @@
+{
+  "total": 9,
+  "users": [
+    {
+      "id": "691f6b29a4750dec90158e37",
+      "name": "Sagar Gajbhar",
+      "email": "gajbharsagar98@gmail.com",
+      "role": "general",
+      "collegeId": null
+    },
+    {
+      "id": "691f71cc9c894e3e1612c1d9",
+      "name": "Sagar Gajbhar",
+      "email": "gajbharsagar2005@gmail.com",
+      "role": "general",
+      "collegeId": "694e0ccbe54f04aabf84428b"
+    },
+    {
+      "id": "69200a8e82fb354b828f7f42",
+      "name": "Ruturaj Nakshane",
+      "email": "ruturajnakshane2511@gmail.com",
+      "role": "general",
+      "collegeId": null
+    },
+    {
+      "id": "692204f95527a87261cb888b",
+      "name": "Ajay Tayde",
+      "email": "ajay@gmail.com",
+      "role": "general",
+      "collegeId": null
+    },
+    {
+      "id": "6925c32967d01e319e18981b",
+      "name": "Sagar Gajbhar",
+      "email": "sagarB@gmail.com",
+      "role": "general",
+      "collegeId": null
+    },
+    {
+      "id": "6925c49167d01e319e18988a",
+      "name": "sagar",
+      "email": "gajbharsagar981@gmail.com",
+      "role": "general",
+      "collegeId": null
+    },
+    {
+      "id": "692b11a257f76a6f9aba3a57",
+      "name": "Alumni",
+      "email": "alumni@gmail.com",
+      "role": "alumni",
+      "collegeId": null
+    },
+    {
+      "id": "6933ca1a6ec3c1544547113e",
+      "name": "Test User",
+      "email": "testnew1@example.com",
+      "role": "general",
+      "collegeId": null
+    },
+    {
+      "id": "694f863b010109088088d5ee",
+      "name": "Sagar ALumni",
+      "email": "sagaralumni@gmail.com",
+      "role": "alumni",
+      "collegeId": "694e0ccbe54f04aabf84428b"
+    }
+  ]
+}
