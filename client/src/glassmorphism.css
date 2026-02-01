@@ -1,0 +1,80 @@
+/* Premium Glassmorphism Utility Classes */
+
+/* Premium Input Fields */
+.input-glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.input-glass:focus {
+    border-color: rgb(59, 130, 246);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.dark .input-glass {
+    background-color: rgba(15, 23, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.dark .input-glass:focus {
+    border-color: rgb(96, 165, 250);
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+.input-glass::placeholder {
+    color: rgba(156, 163, 175, 1);
+}
+
+.dark .input-glass::placeholder {
+    color: rgba(107, 114, 128, 1);
+}
+
+/* Premium Dropdown/Modal */
+.dropdown-glass {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.dark .dropdown-glass {
+    background-color: rgba(15, 23, 42, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Premium Search Results */
+.search-glass {
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    background-color: rgba(255, 255, 255, 0.80);
+    border: 1px solid rgba(229, 231, 235, 0.6);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .search-glass {
+    background-color: rgba(15, 23, 42, 0.80);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+}
+
+/* Premium Card */
+.card-glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+}
+
+.dark .card-glass {
+    background-color: rgba(15, 23, 42, 0.9);
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+}

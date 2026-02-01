@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1, minimum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+
+  <!-- Favicon (.ico) -->
+  <link rel="icon" type="image/x-icon" href="%PUBLIC_URL%/favicons.ico" />
+
+  <!-- Mobile Web App Capable -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Campus Connect" />
+
+  <!-- Android Chrome specific -->
+  <meta name="theme-color" content="#000000" />
+  <meta name="msapplication-navbutton-color" content="#000000" />
+  <meta name="msapplication-TileColor" content="#000000" />
+
+  <!-- PWA and Fullscreen support -->
+  <meta name="full-screen" content="yes" />
+  <meta name="browsermode" content="application" />
+  <meta name="x5-orientation" content="portrait" />
+  <meta name="x5-fullscreen" content="true" />
+  <meta name="x5-page-mode" content="app" />
+
+  <!-- iOS specific -->
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="apple-touch-fullscreen" content="yes" />
+
+  <link rel="android-chrome" href="%PUBLIC_URL%/android-chrome-192x192s.png" />
+  <link rel="android-chrome" href="%PUBLIC_URL%/android-chrome-512x512s.png" />
+
+  <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icons.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32s.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16s.png" />
+  <link rel="manifest" href="%PUBLIC_URL%/site.webmanifest" />
+
+  <title>Campus Connects</title>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.10.48/build/spline-viewer.js"></script>
+
+  <style>
+    /* Prevent flash of white screen - default to white (light mode) */
+    body {
+      margin: 0;
+      background-color: #ffffff;
+      transition: background-color 0.2s ease;
+    }
+
+    /* Dark mode body */
+    .dark body {
+      background-color: #000000;
+    }
+  </style>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root">
+    <!-- Initial loading screen -->
+    <div id="initial-loader" class="loader-bg">
+      <div class="loader-bar-container">
+        <div class="loader-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Immediately invoke function to set theme before rendering
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem('theme');
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+        if (theme === 'pure-dark') theme = 'dark';
+
+        var root = document.documentElement;
+        if (theme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      } catch (e) {
+        console.error("Theme init error", e);
+      }
+    })();
+
+    // Remove loader once React mounts
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        var loader = document.getElementById('initial-loader');
+        if (loader && document.getElementById('root').children.length > 0) {
+          loader.style.opacity = '0';
+          loader.style.visibility = 'hidden';
+          setTimeout(function () {
+            loader.remove();
+          }, 500);
+        }
+      }, 300);
+    });
+  </script>
+
+  <style>
+    .loader-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: background-color 0.2s ease, opacity 0.5s ease-out, visibility 0.5s ease-out;
+
+      /* Default Light Mode */
+      background-color: #ffffff;
+    }
+
+    .loader-bar-container {
+      width: 200px;
+      height: 4px;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+      margin: 0;
+
+      /* Default Light Mode */
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .loader-bar-fill {
+      width: 50%;
+      height: 100%;
+      border-radius: 4px;
+      position: absolute;
+      left: -50%;
+      top: 0;
+      animation: loadingBar 1.5s ease-in-out infinite;
+
+      /* Default Light Mode */
+      background: #000000;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Dark Mode Styles */
+    .dark .loader-bg {
+      background-color: #000000;
+    }
+
+    .dark .loader-bar-container {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .dark .loader-bar-fill {
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    @keyframes loadingBar {
+      0% {
+        left: -50%;
+        width: 30%;
+      }
+
+      50% {
+        left: 25%;
+        width: 50%;
+      }
+
+      100% {
+        left: 100%;
+        width: 30%;
+      }
+    }
+
+    #initial-loader {
+      transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+    }
+  </style>
+</body>
+
+</html>

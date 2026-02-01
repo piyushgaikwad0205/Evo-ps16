@@ -1,0 +1,382 @@
+import React, { useState, useEffect, useRef, memo } from "react";
+import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logoutAction } from "../../redux/actions/authActions";
+import { useTheme } from "../../contexts/ThemeContext";
+import { getAvatarUrl, handleImageError } from "../../utils/imageUtils";
+import Search from "./Search";
+import { Transition } from "@headlessui/react";
+import { AiOutlineBars } from "react-icons/ai";
+import { RxCross1 } from "react-icons/rx";
+import { RiMessage2Line } from "react-icons/ri";
+import { MESSAGES_API } from "../../redux/api/utils";
+import { getMyNotifications } from "../../redux/api/userAPI";
+import { HiOutlineSun, HiOutlineMoon, HiOutlineFire } from "react-icons/hi2";
+import CampusLogo from "../../assets/Campus-Connects.png";
+
+const Navbar = ({ userData, toggleLeftbar, showLeftbar }) => {
+  const dispatch = useDispatch();
+  const { isDarkMode, toggleTheme } = useTheme();
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showMessages, setShowMessages] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [notifUnread, setNotifUnread] = useState(0);
+  const [messageUnread, setMessageUnread] = useState(0);
+  const sseRef = useRef(null);
+
+  const dropdownRef = useRef(null);
+  const msgRef = useRef(null);
+
+  const handleProfileClick = () => {
+    setShowDropdown(!showDropdown);
+  };
+
+  const handleMessageClick = async () => {
+    setShowMessages((prev) => !prev);
+    setShowDropdown(false);
+    
+    // Load both messages and notifications
+    if (conversations.length === 0) {
+      try {
+        const res = await MESSAGES_API.get("/conversations");
+        setConversations(res.data || []);
+      } catch {}
+    }
+    
+    if (notifications.length === 0) {
+      try {
+        const { data } = await getMyNotifications();
+        if (data) { 
+          setNotifications(data); 
+        }
+      } catch {}
+    }
+    
+    // Clear unread counts when opening
+    setMessageUnread(0);
+    setNotifUnread(0);
+  };
+
+  const logout = async () => {
+    setLoggingOut(true);
+    await dispatch(logoutAction());
+    setLoggingOut(false);
+  };
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      const outsideDropdown = dropdownRef.current && !dropdownRef.current.contains(event.target);
+      const outsideMsg = msgRef.current && !msgRef.current.contains(event.target);
+      const outsideMobileSearch = !event.target.closest('#mobile-search') && !event.target.closest('button[onclick*="mobile-search"]');
+      
+      if (outsideDropdown && outsideMsg) {
+        setShowDropdown(false);
+        setShowMessages(false);
+      }
+      
+      // Close mobile search if clicking outside
+      if (outsideMobileSearch) {
+        const mobileSearch = document.getElementById('mobile-search');
+        if (mobileSearch && mobileSearch.style.display === 'block') {
+          mobileSearch.style.display = 'none';
+        }
+      }
+    };
+
+    document.addEventListener("click", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+    };
+  }, []);
+
+  // Subscribe to notifications/events stream for live updates (likes, admin, message heads)
+  useEffect(() => {
+    try {
+      if (sseRef.current) { try { sseRef.current.close(); } catch {} }
+      const base = process.env.REACT_APP_API_URL || '';
+      const token = JSON.parse(localStorage.getItem('profile') || '{}')?.accessToken;
+      const url = `${base}/users/me/notifications/stream?token=${encodeURIComponent(token || '')}`;
+      const es = new EventSource(url, { withCredentials: true });
+      sseRef.current = es;
+      es.onmessage = (e) => {
+        try {
+          const payload = JSON.parse(e.data || '{}');
+          if (payload?.type === 'story_like') {
+            setNotifications(prev => [{ _id: `${payload.storyId}:${Date.now()}`, message: `Your story received a ${payload.liked ? 'like' : 'unlike'}.`, createdAt: new Date().toISOString() }, ...prev].slice(0, 20));
+            setNotifUnread((n) => n + 1);
+          }
+          if (payload?.type === 'admin_announcement') {
+            setNotifications(prev => [{ _id: `admin:${Date.now()}`, message: payload.message || 'Admin announcement', createdAt: new Date().toISOString() }, ...prev].slice(0, 20));
+            setNotifUnread((n) => n + 1);
+          }
+          if (payload?.type === 'message' && payload.message) {
+            // Update conversations preview
+            const msg = payload.message;
+            setConversations(prev => {
+              const next = prev.map(c => c._id === String(msg.conversation) ? { ...c, lastMessage: msg, lastMessageAt: msg.createdAt } : c);
+              return next;
+            });
+            setMessageUnread((n) => n + 1);
+          }
+        } catch {}
+      };
+      es.onerror = () => {};
+    } catch {}
+    return () => { if (sseRef.current) { try { sseRef.current.close(); } catch {} sseRef.current = null; } };
+  }, []);
+
+  // Preload notifications on mount and keep them fresh periodically
+  useEffect(() => {
+    let intervalId;
+    const loadNotifications = async () => {
+      try {
+        const { data } = await getMyNotifications();
+        if (data) {
+          setNotifications(data);
+        }
+      } catch {}
+    };
+    // initial fetch
+    loadNotifications();
+    // refresh every 30s
+    intervalId = setInterval(loadNotifications, 30000);
+    // refresh on window focus
+    const onFocus = () => loadNotifications();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-dark-bg-secondary/95 backdrop-blur-md border-b border-gray-200 dark:border-dark-border shadow-sm transition-colors duration-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo and Mobile Menu Button */}
+          <div className="flex items-center">
+            <button 
+              className="lg:hidden p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary transition-colors"
+              onClick={toggleLeftbar}
+            >
+              {showLeftbar ? <RxCross1 size={20} /> : <AiOutlineBars size={20} />}
+            </button>
+            
+            <Link to="/home" className="ml-2 lg:ml-0">
+              <img className="h-10 sm:h-12 w-auto" src={CampusLogo} alt="Campus Connects" />
+            </Link>
+          </div>
+
+          {/* Search Bar - Hidden on mobile */}
+          <div className="hidden md:block flex-1 max-w-lg mx-8">
+            <Search />
+          </div>
+
+          {/* Right Side Actions */}
+          <div className="flex items-center space-x-2 flex-nowrap whitespace-nowrap">
+            {/* Login Streak (Desktop + Mobile) */}
+            <div className="relative">
+              <button
+                type="button"
+                className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary transition-colors relative"
+                title={`Login streak: ${Number(userData?.loginStreakCount || 0)} day${Number(userData?.loginStreakCount || 0) === 1 ? '' : 's'}`}
+              >
+                <HiOutlineFire size={20} className={`${(userData?.loginStreakCount||0) > 0 ? 'text-orange-500' : ''}`} />
+                {Number(userData?.loginStreakCount || 0) > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 bg-orange-500 text-white text-[10px] leading-4 rounded-full flex items-center justify-center">
+                    {userData?.loginStreakCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Mobile Search Button */}
+            <button 
+              className="md:hidden p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary transition-colors"
+              onClick={() => {
+                // Toggle mobile search visibility
+                const searchInput = document.getElementById('mobile-search');
+                if (searchInput) {
+                  searchInput.style.display = searchInput.style.display === 'none' ? 'block' : 'none';
+                  if (searchInput.style.display === 'block') {
+                    searchInput.focus();
+                  }
+                }
+              }}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+
+            {/* Mobile Search Input */}
+            <div id="mobile-search" className="md:hidden absolute top-16 left-0 right-0 bg-white dark:bg-dark-bg-secondary border-b border-gray-200 dark:border-dark-border p-4 z-40" style={{ display: 'none' }}>
+              <Search />
+            </div>
+
+            {/* Unified Messages & Notifications */}
+            <div className="relative" ref={msgRef}>
+              <button
+                type="button"
+                className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary transition-colors relative"
+                onClick={handleMessageClick}
+              >
+                <div className="relative">
+                  <RiMessage2Line size={20} />
+                  {(messageUnread + notifUnread) > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {messageUnread + notifUnread}
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              <Transition
+                show={showMessages}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+                className="absolute right-0 mt-2 w-screen sm:w-80 bg-white dark:bg-dark-bg-secondary rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50 border border-gray-200 dark:border-dark-border max-h-[80vh] overflow-y-auto"
+              >
+                <div className="py-1">
+                  {/* Messages Section */}
+                  <div className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-dark-text border-b border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-dark-bg-tertiary">
+                    Messages ({conversations.length})
+                  </div>
+                  {conversations.length === 0 ? (
+                    <div className="px-4 py-3 text-center text-gray-500 dark:text-dark-text-secondary text-xs">
+                      No messages yet
+                    </div>
+                  ) : (
+                    conversations.slice(0, 3).map((conv) => (
+                      <div key={conv._id} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-bg-tertiary cursor-pointer transition-colors border-b border-gray-100 dark:border-dark-border">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex-shrink-0">
+                            {conv.participants?.find(p => p._id !== userData._id)?.avatar ? (
+                              <img 
+                                src={getAvatarUrl(conv.participants.find(p => p._id !== userData._id)?.avatar)} 
+                                alt="avatar" 
+                                className="w-10 h-10 rounded-full object-cover"
+                                onError={(e) => handleImageError(e, 'avatar')}
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
+                                {conv.participants?.find(p => p._id !== userData._id)?.name?.charAt(0) || '?'}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 dark:text-dark-text truncate">
+                              {conv.participants?.find(p => p._id !== userData._id)?.name || 'Unknown'}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-dark-text-secondary line-clamp-2 mt-1">
+                              {conv.lastMessage?.content || 'No messages yet'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  
+                  {/* Notifications Section */}
+                  <div className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-dark-text border-b border-gray-200 dark:border-dark-border bg-gray-50 dark:bg-dark-bg-tertiary">
+                    Notifications ({notifications.length})
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-3 text-center text-gray-500 dark:text-dark-text-secondary text-xs">
+                      No notifications yet
+                    </div>
+                  ) : (
+                    notifications.slice(0, 3).map((notif) => (
+                      <div key={notif._id} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-bg-tertiary cursor-pointer transition-colors border-b border-gray-100 dark:border-dark-border">
+                        <div className="text-sm text-gray-900 dark:text-dark-text line-clamp-2">{notif.message}</div>
+                        <div className="text-xs text-gray-500 dark:text-dark-text-secondary mt-2">
+                          {new Date(notif.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  
+                  {/* View All Links */}
+                  <div className="border-t border-gray-200 dark:border-dark-border px-4 py-3 flex flex-col sm:flex-row justify-between gap-2">
+                    <Link to="/messages" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-center sm:text-left">
+                      View all messages
+                    </Link>
+                    <Link to="/notifications" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-center sm:text-left">
+                      View all notifications
+                    </Link>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+
+            {/* Profile Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={handleProfileClick}
+                className="flex items-center space-x-2 p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary transition-colors"
+              >
+                <img
+                  className="h-8 w-8 rounded-full object-cover"
+                  src={getAvatarUrl(userData?.avatar)}
+                  alt="Profile"
+                  loading="lazy"
+                  onError={(e) => handleImageError(e, 'avatar')}
+                />
+                <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-dark-text">
+                  {userData?.username ? `@${userData.username}` : (userData?.name || "User")}
+                </span>
+              </button>
+
+              <Transition
+                show={showDropdown}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+                className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-bg-secondary rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50 border border-gray-200 dark:border-dark-border"
+              >
+                <div className="py-1">
+                  <button
+                    onClick={toggleTheme}
+                    className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-dark-text hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary transition-colors"
+                  >
+                    <span>Toggle {isDarkMode ? 'Light' : 'Dark'} Mode</span>
+                    {isDarkMode ? (
+                      <HiOutlineSun size={18} className="text-yellow-500" />
+                    ) : (
+                      <HiOutlineMoon size={18} className="text-blue-600" />
+                    )}
+                  </button>
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-dark-text hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary transition-colors"
+                  >
+                    Your Profile
+                  </Link>
+                  <button
+                    onClick={logout}
+                    disabled={loggingOut}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-dark-text hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary disabled:opacity-50 transition-colors"
+                  >
+                    {loggingOut ? "Signing out..." : "Sign out"}
+                  </button>
+                </div>
+              </Transition>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default memo(Navbar);

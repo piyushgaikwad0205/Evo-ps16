@@ -1,0 +1,254 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+    HiAcademicCap,
+    HiBookOpen,
+    HiCalendar,
+    HiChartBar,
+    HiArrowRightOnRectangle,
+    HiBuildingOffice2,
+} from "react-icons/hi2";
+import { useTheme } from "../contexts/ThemeContext";
+import axios from "axios";
+
+import ClassManagement from "../components/admin/ClassManagement";
+
+const TeacherDashboard = () => {
+    const { isDarkMode } = useTheme();
+    const navigate = useNavigate();
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState("overview");
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const token = localStorage.getItem("facultyToken");
+                const userType = localStorage.getItem("facultyType");
+
+                if (!token || userType !== "teacher") {
+                    navigate("/faculty/signin");
+                    return;
+                }
+
+                const res = await axios.get("http://localhost:4000/api/faculty/me", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (res.data.userType !== "teacher") {
+                    navigate("/faculty/signin");
+                    return;
+                }
+
+                setUser(res.data.user);
+            } catch (error) {
+                console.error("Error fetching user:", error);
+                navigate("/faculty/signin");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUser();
+    }, [navigate]);
+
+    const handleLogout = () => {
+        localStorage.removeItem("facultyToken");
+        localStorage.removeItem("facultyUser");
+        localStorage.removeItem("facultyType");
+        navigate("/faculty/signin");
+    };
+
+    if (loading) {
+        return (
+            <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? "bg-dark-bg" : "bg-gray-50"}`}>
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+            </div>
+        );
+    }
+
+    if (!user) return null;
+
+    const stats = [
+        { label: "Department", value: user.department?.name || "N/A", icon: HiBuildingOffice2, color: "blue" },
+        { label: "Designation", value: user.designation || "N/A", icon: HiAcademicCap, color: "purple" },
+        { label: "Experience", value: `${user.experience} years`, icon: HiChartBar, color: "green" },
+        { label: "Subjects", value: user.subjects?.length || 0, icon: HiBookOpen, color: "orange" },
+    ];
+
+    return (
+        <div className={`min-h-screen ${isDarkMode ? "bg-dark-bg" : "bg-gray-50"}`}>
+            {/* Header */}
+            <header className={`sticky top-0 z-10 backdrop-blur-xl border-b ${isDarkMode ? "bg-dark-bg/80 border-white/10" : "bg-white/80 border-gray-200"}`}>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl ${isDarkMode ? "bg-purple-900/20" : "bg-purple-100"}`}>
+                                <HiBookOpen className={`w-8 h-8 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
+                            </div>
+                            <div>
+                                <h1 className={`text-2xl font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                    Teacher Dashboard
+                                </h1>
+                                <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+                                    Welcome back, {user.name}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <nav className="hidden md:flex gap-1">
+                                <button
+                                    onClick={() => setActiveTab("overview")}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "overview" ? (isDarkMode ? "bg-white/10 text-white" : "bg-gray-100 text-gray-900") : (isDarkMode ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900")}`}
+                                >
+                                    Overview
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("classes")}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "classes" ? (isDarkMode ? "bg-white/10 text-white" : "bg-gray-100 text-gray-900") : (isDarkMode ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900")}`}
+                                >
+                                    My Classes
+                                </button>
+                            </nav>
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
+                            >
+                                <HiArrowRightOnRectangle className="w-5 h-5" />
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {activeTab === "overview" ? (
+                    <>
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            {stats.map((stat, index) => (
+                                <motion.div
+                                    key={stat.label}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className={`p-6 rounded-2xl shadow-sm border ${isDarkMode ? "bg-dark-bg-secondary border-white/5" : "bg-white border-gray-200"}`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`p-3 rounded-xl bg-${stat.color}-100 dark:bg-${stat.color}-900/20`}>
+                                            <stat.icon className={`w-6 h-6 text-${stat.color}-600 dark:text-${stat.color}-400`} />
+                                        </div>
+                                        <div>
+                                            <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>{stat.label}</p>
+                                            <p className={`text-xl font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>{stat.value}</p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        {/* Subjects List */}
+                        {user.subjects && user.subjects.length > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4 }}
+                                className={`rounded-2xl shadow-sm border p-6 mb-8 ${isDarkMode ? "bg-dark-bg-secondary border-white/5" : "bg-white border-gray-200"}`}
+                            >
+                                <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                    Teaching Subjects
+                                </h2>
+                                <div className="flex flex-wrap gap-2">
+                                    {user.subjects.map((subject, index) => (
+                                        <span
+                                            key={index}
+                                            className={`px-4 py-2 rounded-xl ${isDarkMode ? "bg-purple-900/20 text-purple-400" : "bg-purple-100 text-purple-700"}`}
+                                        >
+                                            {subject}
+                                        </span>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* Profile Information */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                            className={`rounded-2xl shadow-sm border p-6 ${isDarkMode ? "bg-dark-bg-secondary border-white/5" : "bg-white border-gray-200"}`}
+                        >
+                            <h2 className={`text-xl font-bold mb-6 ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                Profile Information
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className={`text-sm font-medium ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Employee ID</label>
+                                    <p className={`mt-1 ${isDarkMode ? "text-white" : "text-gray-900"}`}>{user.employeeId}</p>
+                                </div>
+                                <div>
+                                    <label className={`text-sm font-medium ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Email</label>
+                                    <p className={`mt-1 ${isDarkMode ? "text-white" : "text-gray-900"}`}>{user.email}</p>
+                                </div>
+                                <div>
+                                    <label className={`text-sm font-medium ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Phone</label>
+                                    <p className={`mt-1 ${isDarkMode ? "text-white" : "text-gray-900"}`}>{user.phone || "N/A"}</p>
+                                </div>
+                                <div>
+                                    <label className={`text-sm font-medium ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Qualification</label>
+                                    <p className={`mt-1 ${isDarkMode ? "text-white" : "text-gray-900"}`}>{user.qualification || "N/A"}</p>
+                                </div>
+                                <div>
+                                    <label className={`text-sm font-medium ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Specialization</label>
+                                    <p className={`mt-1 ${isDarkMode ? "text-white" : "text-gray-900"}`}>{user.specialization || "N/A"}</p>
+                                </div>
+                                <div>
+                                    <label className={`text-sm font-medium ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Status</label>
+                                    <p className={`mt-1 ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                        <span className={`px-3 py-1 rounded-full text-sm ${user.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"}`}>
+                                            {user.isActive ? "Active" : "Inactive"}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Quick Actions */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.6 }}
+                            className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
+                        >
+                            <div
+                                onClick={() => setActiveTab("classes")}
+                                className={`p-6 rounded-2xl shadow-sm border ${isDarkMode ? "bg-dark-bg-secondary border-white/5" : "bg-white border-gray-200"} hover:shadow-lg transition-shadow cursor-pointer`}
+                            >
+                                <HiBookOpen className={`w-8 h-8 mb-3 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
+                                <h3 className={`font-semibold mb-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>My Classes</h3>
+                                <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>View and manage your classes</p>
+                            </div>
+                            <div className={`p-6 rounded-2xl shadow-sm border ${isDarkMode ? "bg-dark-bg-secondary border-white/5" : "bg-white border-gray-200"} hover:shadow-lg transition-shadow cursor-pointer`}>
+                                <HiCalendar className={`w-8 h-8 mb-3 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+                                <h3 className={`font-semibold mb-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Schedule</h3>
+                                <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>View your teaching schedule</p>
+                            </div>
+                            <div className={`p-6 rounded-2xl shadow-sm border ${isDarkMode ? "bg-dark-bg-secondary border-white/5" : "bg-white border-gray-200"} hover:shadow-lg transition-shadow cursor-pointer`}>
+                                <HiChartBar className={`w-8 h-8 mb-3 ${isDarkMode ? "text-green-400" : "text-green-600"}`} />
+                                <h3 className={`font-semibold mb-2 ${isDarkMode ? "text-white" : "text-gray-900"}`}>Performance</h3>
+                                <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>View student performance reports</p>
+                            </div>
+                        </motion.div>
+                    </>
+                ) : (
+                    <ClassManagement role="teacher" teacherId={user._id} />
+                )}
+            </main>
+        </div>
+    );
+};
+
+export default TeacherDashboard;

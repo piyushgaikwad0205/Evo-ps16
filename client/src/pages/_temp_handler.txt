@@ -1,0 +1,47 @@
+
+    // Filter out current user from the list
+    const filteredAlumni = alumni.filter(a => a._id !== user?._id);
+
+    const handleToggleConnection = async (person) => {
+        if (!user) {
+            alert('Please sign in to connect.');
+            return;
+        }
+
+        const personId = person._id;
+        const currentState = connectionStates[personId] || { status: 'none' };
+        
+        setLoadingStates(prev => ({ ...prev, [personId]: true }));
+
+        try {
+            if (currentState.status === 'connected' || currentState.status === 'accepted') {
+                // Disconnect
+                const { error } = await removeConnection(currentState.connectionId);
+                if (!error) {
+                    setConnectionStates(prev => ({
+                        ...prev,
+                        [personId]: { status: 'none', connectionId: null }
+                    }));
+                    alert(`Disconnected from ${person.name}`);
+                }
+            } else {
+                // Connect
+                const { error, data } = await sendConnectionRequest({ recipientId: personId });
+                if (!error && data) {
+                    setConnectionStates(prev => ({
+                        ...prev,
+                        [personId]: { 
+                            status: data.connection.status, 
+                            connectionId: data.connection._id 
+                        }
+                    }));
+                    alert(`Connection request sent to ${person.name}`);
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Failed to update connection');
+        } finally {
+            setLoadingStates(prev => ({ ...prev, [personId]: false }));
+        }
+    };
